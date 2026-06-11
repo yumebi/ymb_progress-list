@@ -29,6 +29,15 @@
 - データは `%APPDATA%\com.yumebi.progress-list\data.json` に自動保存(変更の500ms後)。
 - 旧形式のデータは起動時に自動変換される([storage.ts](src/storage.ts) の `migrate`)。
 
+## Windowsインストーラー
+
+[`installer/`](installer/) フォルダにビルド済みのWindows用インストーラーを同梱しています。
+
+- `progress-list_0.1.0_x64-setup.exe` — NSIS形式のセットアップ(推奨)
+- `progress-list_0.1.0_x64_en-US.msi` — MSI形式
+
+いずれかを実行するとアプリがインストールされ、スタートメニューから起動できます。
+
 ## 開発
 
 ```bash
@@ -43,3 +52,7 @@ npm run tauri build  # リリースビルド(src-tauri/target/release/)
 - `src/storage.ts` — tauri-plugin-store による永続化+旧データ変換(ブラウザ実行時はlocalStorage)
 - `src/seed.ts` — 初回起動時の初期データ
 - `src/App.tsx` — UI全体(カテゴリ/案件編集・マスタ設定・プレビュー・テーマ切替)
+
+## ライセンス
+
+[MIT License](LICENSE)
