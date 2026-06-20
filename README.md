@@ -31,10 +31,10 @@
 
 ## Windowsインストーラー
 
-[`installer/`](installer/) フォルダにビルド済みのWindows用インストーラーを同梱しています。
+[Releases](../../releases) ページからWindows用インストーラーをダウンロードできます(タグpush時にCIが自動ビルド・公開)。
 
-- `progress-list_0.1.0_x64-setup.exe` — NSIS形式のセットアップ(推奨)
-- `progress-list_0.1.0_x64_en-US.msi` — MSI形式
+- `progress-list_x.y.z_x64-setup.exe` — NSIS形式のセットアップ(推奨)
+- `progress-list_x.y.z_x64_en-US.msi` — MSI形式
 
 いずれかを実行するとアプリがインストールされ、スタートメニューから起動できます。
 

@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# ビルド済みインストーラー(GitHub Releasesで配布。CIが自動生成)
+installer/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
