@@ -29,14 +29,22 @@
 - データは `%APPDATA%\com.yumebi.progress-list\data.json` に自動保存(変更の500ms後)。
 - 旧形式のデータは起動時に自動変換される([storage.ts](src/storage.ts) の `migrate`)。
 
-## Windowsインストーラー
+## インストーラー
 
-[Releases](../../releases) ページからWindows用インストーラーをダウンロードできます(タグpush時にCIが自動ビルド・公開)。
+[Releases](../../releases) ページからWindows/macOS用インストーラーをダウンロードできます(タグpush時にCIが自動ビルド・公開)。
+
+**Windows**
 
 - `progress-list_x.y.z_x64-setup.exe` — NSIS形式のセットアップ(推奨)
 - `progress-list_x.y.z_x64_en-US.msi` — MSI形式
 
 いずれかを実行するとアプリがインストールされ、スタートメニューから起動できます。
+
+**macOS**
+
+- `progress-list_x.y.z_universal.dmg` — Intel/Apple Silicon両対応のディスクイメージ
+
+マウントしてApplicationsフォルダにドラッグしてください。署名なしビルドのため、初回起動時はFinderで本体を右クリック→「開く」が必要な場合があります。
 
 ## 開発
 
