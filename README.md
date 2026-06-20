@@ -40,6 +40,8 @@
 
 いずれかを実行するとアプリがインストールされ、スタートメニューから起動できます。
 
+※ Windows Defender が警告を出す場合があります。「詳細情報」→「実行」で起動してください。
+
 **macOS**
 
 - `progress-list_x.y.z_universal.dmg` — Intel/Apple Silicon両対応のディスクイメージ
