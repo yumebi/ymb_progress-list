@@ -12,6 +12,7 @@ import {
 } from "./types";
 import { generateOutput, sortProjects } from "./format";
 import { isTauri, loadData, saveData } from "./storage";
+import { version as APP_VERSION } from "../package.json";
 import "./App.css";
 
 /** マスタにない現在値も選択肢に含めたoptionsを作る */
@@ -578,7 +579,9 @@ export default function App() {
   return (
     <div className="app" style={editorVars}>
       <header className="toolbar">
-        <h1>YMB進行状況リスト</h1>
+        <h1>
+          YMB進行状況リスト<span className="app-version">v{APP_VERSION}</span>
+        </h1>
         <div className="toolbar-actions">
           <button onClick={toggleTheme} title="ダーク/ライト切替">
             {data.settings.theme === "dark" ? "🌙 ダーク" : "☀ ライト"}
