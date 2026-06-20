@@ -55,4 +55,4 @@ npm run tauri build  # リリースビルド(src-tauri/target/release/)
 
 ## ライセンス
 
-[MIT License](LICENSE)
+[MIT License](LICENSE) © 2026 ymb
