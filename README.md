@@ -2,6 +2,8 @@
 
 案件の進行状況を管理し、メール等に貼り付けられるテキスト一覧を出力するTauriアプリ。
 
+## 主な機能
+
 ```
 ■サンプルカテゴリA
 ※26/06/08　サンプル案件1　月次修正－確認中、発注書：有
@@ -9,7 +11,7 @@
 ・28/02/??　サンプル案件3
 ```
 
-## 案件行の項目
+### 案件行の項目
 
 | 項目 | 入力方法 | 出力 |
 |---|---|---|
@@ -29,7 +31,32 @@
 - データは `%APPDATA%\com.yumebi.progress-list\data.json` に自動保存(変更の500ms後)。
 - 旧形式のデータは起動時に自動変換される([storage.ts](src/storage.ts) の `migrate`)。
 
-## インストーラー
+## 開発環境のセットアップ
+
+```bash
+npm install
+npm run tauri dev    # 開発起動
+```
+
+## 技術スタック
+
+| 用途 | ライブラリ/ツール |
+|---|---|
+| フレームワーク | [Tauri v2](https://v2.tauri.app/) |
+| フロントエンド | React 19 + TypeScript |
+| ビルドツール | Vite |
+| 永続化 | tauri-plugin-store(ブラウザ実行時はlocalStorage) |
+| その他プラグイン | tauri-plugin-clipboard-manager / tauri-plugin-dialog / tauri-plugin-fs / tauri-plugin-opener |
+| CI/CD | GitHub Actions(タグpush時に自動ビルド・公開) |
+
+## プロジェクト構成
+
+- `src/format.ts` — ソート・出力テキスト生成
+- `src/storage.ts` — tauri-plugin-store による永続化+旧データ変換(ブラウザ実行時はlocalStorage)
+- `src/seed.ts` — 初回起動時の初期データ
+- `src/App.tsx` — UI全体(カテゴリ/案件編集・マスタ設定・プレビュー・テーマ切替)
+
+## ダウンロード
 
 [Releases](../../releases) ページからWindows/macOS用インストーラーをダウンロードできます(タグpush時にCIが自動ビルド・公開)。
 
@@ -47,21 +74,6 @@
 - `progress-list_x.y.z_universal.dmg` — Intel/Apple Silicon両対応のディスクイメージ
 
 マウントしてApplicationsフォルダにドラッグしてください。署名なしビルドのため、初回起動時はFinderで本体を右クリック→「開く」が必要な場合があります。
-
-## 開発
-
-```bash
-npm install
-npm run tauri dev    # 開発起動
-npm run tauri build  # リリースビルド(src-tauri/target/release/)
-```
-
-主要ファイル:
-
-- `src/format.ts` — ソート・出力テキスト生成
-- `src/storage.ts` — tauri-plugin-store による永続化+旧データ変換(ブラウザ実行時はlocalStorage)
-- `src/seed.ts` — 初回起動時の初期データ
-- `src/App.tsx` — UI全体(カテゴリ/案件編集・マスタ設定・プレビュー・テーマ切替)
 
 ## ライセンス
 
