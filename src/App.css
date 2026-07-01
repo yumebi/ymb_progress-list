@@ -92,6 +92,11 @@ body,
   gap: 8px;
 }
 
+.update-badge {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 button {
   font-family: inherit;
   font-size: 13px;

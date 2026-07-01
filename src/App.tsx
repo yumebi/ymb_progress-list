@@ -23,6 +23,42 @@ function withCurrent(options: string[], current: string): string[] {
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
+const GITHUB_REPO = "yumebi/ymb_progress-list";
+const RELEASES_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
+
+/** "1.2.3" 同士を比較。aがbより新しければtrue */
+function isNewerVersion(a: string, b: string): boolean {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
+    if (diff !== 0) return diff > 0;
+  }
+  return false;
+}
+
+/** GitHub Releasesの最新バージョンを取得(取得失敗時はnull) */
+async function fetchLatestVersion(): Promise<string | null> {
+  try {
+    const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const tag = String(json.tag_name ?? "");
+    return tag.replace(/^v/, "") || null;
+  } catch {
+    return null;
+  }
+}
+
+async function openReleasesPage() {
+  if (isTauri) {
+    const { openUrl } = await import("@tauri-apps/plugin-opener");
+    await openUrl(RELEASES_URL);
+  } else {
+    window.open(RELEASES_URL, "_blank");
+  }
+}
+
 /** ドラッグで幅を調整するハンドル(横方向)。net幅0で配置できるよう呼び出し側でmargin調整する */
 function ResizeHandle({ onResize }: { onResize: (deltaPx: number) => void }) {
   const onMouseDown = (e: React.MouseEvent) => {
@@ -459,6 +495,7 @@ export default function App() {
   const [data, setData] = useState<AppData | null>(null);
   const [toast, setToast] = useState("");
   const [showSettings, setShowSettings] = useState(false);
+  const [latestVersion, setLatestVersion] = useState<string | null>(null);
   const loaded = useRef(false);
   const saveTimer = useRef<number | undefined>(undefined);
 
@@ -466,6 +503,13 @@ export default function App() {
     loadData().then((d) => {
       loaded.current = true;
       setData(d);
+    });
+  }, []);
+
+  // 起動時にGitHub Releasesの最新バージョンを確認
+  useEffect(() => {
+    fetchLatestVersion().then((v) => {
+      if (v && isNewerVersion(v, APP_VERSION)) setLatestVersion(v);
     });
   }, []);
 
@@ -583,6 +627,11 @@ export default function App() {
           YMB進行状況リスト<span className="app-version">v{APP_VERSION}</span>
         </h1>
         <div className="toolbar-actions">
+          {latestVersion && (
+            <button className="update-badge" onClick={openReleasesPage}>
+              🆕 v{latestVersion} が公開されています
+            </button>
+          )}
           <button onClick={toggleTheme} title="ダーク/ライト切替">
             {data.settings.theme === "dark" ? "🌙 ダーク" : "☀ ライト"}
           </button>
