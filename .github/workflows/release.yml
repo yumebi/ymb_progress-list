@@ -6,7 +6,60 @@ on:
       - main
 
 jobs:
+  bump-version:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Compute next version (各桁9で繰り上げ)
+        id: next
+        run: |
+          node -e '
+            const fs = require("fs");
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            let [major, minor, patch] = pkg.version.split(".").map(Number);
+            patch += 1;
+            if (patch > 9) { patch = 0; minor += 1; }
+            if (minor > 9) { minor = 0; major += 1; }
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${major}.${minor}.${patch}\n`);
+          '
+
+      - name: Bump package.json / package-lock.json
+        run: npm version ${{ steps.next.outputs.version }} --no-git-tag-version --allow-same-version
+
+      - name: Bump tauri.conf.json / Cargo.toml / Cargo.lock
+        run: |
+          node -e '
+            const fs = require("fs");
+            const next = process.argv[1];
+
+            const confPath = "src-tauri/tauri.conf.json";
+            fs.writeFileSync(confPath, fs.readFileSync(confPath, "utf8").replace(/"version":\s*"[^"]+"/, `"version": "${next}"`));
+
+            const tomlPath = "src-tauri/Cargo.toml";
+            fs.writeFileSync(tomlPath, fs.readFileSync(tomlPath, "utf8").replace(/^version = "[^"]+"/m, `version = "${next}"`));
+
+            const lockPath = "src-tauri/Cargo.lock";
+            fs.writeFileSync(lockPath, fs.readFileSync(lockPath, "utf8").replace(/(name = "progress-list"\nversion = ")[^"]+(")/, `$1${next}$2`));
+          ' ${{ steps.next.outputs.version }}
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock
+          git commit -m "chore: bump version to v${{ steps.next.outputs.version }}"
+          git push
+
   release:
+    if: github.actor == 'github-actions[bot]'
     permissions:
       contents: write
     strategy:

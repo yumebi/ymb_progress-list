@@ -47,7 +47,7 @@ npm run tauri dev    # 開発起動
 | ビルドツール | Vite |
 | 永続化 | tauri-plugin-store(ブラウザ実行時はlocalStorage) |
 | その他プラグイン | tauri-plugin-clipboard-manager / tauri-plugin-dialog / tauri-plugin-fs / tauri-plugin-opener |
-| CI/CD | GitHub Actions(タグpush時に自動ビルド・公開) |
+| CI/CD | GitHub Actions(mainへのpushで自動ビルド・バージョン採番・Release公開) |
 
 ## プロジェクト構成
 
