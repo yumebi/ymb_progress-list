@@ -7,7 +7,6 @@ on:
 
 jobs:
   bump-version:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -59,7 +58,7 @@ jobs:
           git push
 
   release:
-    if: github.actor == 'github-actions[bot]'
+    needs: bump-version
     permissions:
       contents: write
     strategy:
@@ -73,6 +72,8 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - uses: actions/setup-node@v4
         with:
