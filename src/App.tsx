@@ -59,14 +59,16 @@ async function openReleasesPage() {
   }
 }
 
-/** 新しいバージョンが公開されている旨のダイアログを表示し、リリースページを開くか尋ねる */
+/**
+ * 新しいバージョンが公開されている旨のダイアログを表示し、リリースページを開くか尋ねる。
+ * ブラウザ実行時(開発時のプレビュー等)はwindow.confirmがレンダリングをブロックするため出さず、
+ * ツールバーのバッジ表示のみに留める。
+ */
 async function askOpenReleasesPage(latest: string): Promise<boolean> {
+  if (!isTauri) return false;
   const msg = `新しいバージョン v${latest} が公開されています。\nリリースページを開きますか？`;
-  if (isTauri) {
-    const { ask } = await import("@tauri-apps/plugin-dialog");
-    return ask(msg, { title: "アップデートのお知らせ", kind: "info", okLabel: "開く", cancelLabel: "閉じる" });
-  }
-  return window.confirm(msg);
+  const { ask } = await import("@tauri-apps/plugin-dialog");
+  return ask(msg, { title: "アップデートのお知らせ", kind: "info", okLabel: "開く", cancelLabel: "閉じる" });
 }
 
 /** ドラッグで幅を調整するハンドル(横方向)。net幅0で配置できるよう呼び出し側でmargin調整する */
