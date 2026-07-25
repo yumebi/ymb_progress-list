@@ -13,6 +13,8 @@ import {
 import { generateOutput, sortProjects } from "./format";
 import { isTauri, loadData, saveData } from "./storage";
 import { version as APP_VERSION } from "../package.json";
+// トークンを先に読み込む。App.css 側が後勝ちで上書きできる順序にする
+import "./ymb-base.css";
 import "./App.css";
 
 /** マスタにない現在値も選択肢に含めたoptionsを作る */

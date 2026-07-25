@@ -1,34 +1,29 @@
+/* 色の出所は ymb-base.css のトークン1箇所。ここに生の色値を増やさないこと。
+   このアプリ独自の変数名は残しているが、値は正本から引いている。
+   ymb-base.css も [data-theme] に反応するので、明暗の切替はそのまま効く。 */
 :root,
 [data-theme="dark"] {
-  --bg: #16181d;
-  --bg-elevated: #1f232b;
-  --bg-input: #262b35;
-  --text: #e6e8eb;
-  --text-muted: #9aa3b2;
-  --border: #333944;
-  --accent: #3b82f6;
-  --accent-text: #ffffff;
+  --bg: var(--ymb-bg);
+  --bg-elevated: var(--ymb-surface);
+  --bg-input: var(--ymb-surface-alt);
+  --text: var(--ymb-fg);
+  --text-muted: var(--ymb-fg-dim);
+  --border: var(--ymb-border);
+  --accent: var(--ymb-accent);
+  --accent-text: var(--ymb-accent-fg);
+  --row-lost-text: var(--ymb-fg-muted);
+  --track-bg: var(--ymb-border);
+
+  /* 以下はこのアプリ固有。危険操作の地色は共通トークンに対応するものが無い */
   --danger-bg: #4a1f24;
   --danger-text: #f87171;
-  --row-lost-text: #6b7280;
   --shadow: rgba(0, 0, 0, 0.5);
-  --track-bg: #3a4150;
 }
 
 [data-theme="light"] {
-  --bg: #f6f7f9;
-  --bg-elevated: #ffffff;
-  --bg-input: #ffffff;
-  --text: #1f2328;
-  --text-muted: #6b7280;
-  --border: #d8dce2;
-  --accent: #2563eb;
-  --accent-text: #ffffff;
   --danger-bg: #fee2e2;
   --danger-text: #b91c1c;
-  --row-lost-text: #9ca3af;
   --shadow: rgba(0, 0, 0, 0.2);
-  --track-bg: #e5e7eb;
 }
 
 * {
