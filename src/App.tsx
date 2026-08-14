@@ -5,8 +5,10 @@ import {
   MIN_COLUMN_WIDTHS,
   PartialDate,
   Project,
+  ProjectTemplate,
   Section,
   Settings,
+  TemplateProject,
   Theme,
   newId,
 } from "./types";
@@ -24,6 +26,20 @@ function withCurrent(options: string[], current: string): string[] {
 }
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/** 日付の年+月を "YYYY-MM" のキーにまとめる(年か月が未定の場合は "" = 未定) */
+function monthKey(p: Project): string {
+  const { year, month } = p.date;
+  if (year === null || month === null) return "";
+  return `${year}-${pad2(month)}`;
+}
+
+/** "YYYY-MM" → "2026年06月"。空文字は「日付未定」 */
+function monthLabel(key: string): string {
+  if (!key) return "日付未定";
+  const [y, m] = key.split("-");
+  return `${y}年${m}月`;
+}
 
 const GITHUB_REPO = "yumebi/ymb_progress-list";
 const RELEASES_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
@@ -334,6 +350,8 @@ function SectionEditor({
   onChangeProject,
   onDeleteProject,
   onResizeColumn,
+  onSaveTemplate,
+  onAddFromTemplate,
 }: {
   section: Section;
   projects: Project[];
@@ -347,6 +365,8 @@ function SectionEditor({
   onChangeProject: (id: string, patch: Partial<Project>) => void;
   onDeleteProject: (id: string) => void;
   onResizeColumn: (key: keyof ColumnWidths, delta: number) => void;
+  onSaveTemplate: () => void;
+  onAddFromTemplate: () => void;
 }) {
   const sorted = sortProjects(projects);
   return (
@@ -359,6 +379,20 @@ function SectionEditor({
           placeholder="カテゴリ名(例: サンプルカテゴリA)"
           onChange={(e) => onRename(e.target.value)}
         />
+        <button
+          className="icon-btn"
+          title="このカテゴリをテンプレート保存"
+          onClick={onSaveTemplate}
+        >
+          ⤓保存
+        </button>
+        <button
+          className="icon-btn"
+          title="テンプレートから案件を追加"
+          onClick={onAddFromTemplate}
+        >
+          ⤒追加
+        </button>
         <button
           className="icon-btn"
           disabled={isFirst}
@@ -464,6 +498,203 @@ function ListEditor({
   );
 }
 
+/** 月次集計: 年+月ごとの案件数・完了数・平均進捗率を表示し、一覧の絞り込みへ移行できる */
+function MonthlyStatsModal({
+  projects,
+  onPickMonth,
+  onClose,
+}: {
+  projects: Project[];
+  onPickMonth: (key: string) => void;
+  onClose: () => void;
+}) {
+  const byMonth = useMemo(() => {
+    const map = new Map<string, Project[]>();
+    for (const p of projects) {
+      const key = monthKey(p);
+      const list = map.get(key) ?? [];
+      list.push(p);
+      map.set(key, list);
+    }
+    const rows = Array.from(map.entries()).map(([key, list]) => {
+      const done = list.filter((p) => p.marker === "✗" || p.progress >= 100).length;
+      const avg = Math.round(
+        list.reduce((sum, p) => sum + p.progress, 0) / Math.max(list.length, 1)
+      );
+      return { key, count: list.length, done, avg };
+    });
+    // 未定は末尾、それ以外は新しい月から順に並べる
+    rows.sort((a, b) => (a.key === "" ? 1 : b.key === "" ? -1 : b.key.localeCompare(a.key)));
+    return rows;
+  }, [projects]);
+
+  const total = projects.length;
+  const totalDone = projects.filter((p) => p.marker === "✗" || p.progress >= 100).length;
+  const totalAvg = Math.round(
+    projects.reduce((sum, p) => sum + p.progress, 0) / Math.max(total, 1)
+  );
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <span>月次集計</span>
+          <button className="icon-btn" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+        <div className="modal-body modal-body-column">
+          <table className="stats-table">
+            <thead>
+              <tr>
+                <th>年月</th>
+                <th>案件数</th>
+                <th>完了(✗/100%)</th>
+                <th>平均進捗率</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {byMonth.map((row) => (
+                <tr key={row.key}>
+                  <td>{monthLabel(row.key)}</td>
+                  <td>{row.count}</td>
+                  <td>{row.done}</td>
+                  <td>{row.avg}%</td>
+                  <td>
+                    <button
+                      className="small-btn"
+                      onClick={() => onPickMonth(row.key)}
+                      title="この月の案件だけを一覧に表示"
+                    >
+                      表示
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>合計</td>
+                <td>{total}</td>
+                <td>{totalDone}</td>
+                <td>{totalAvg}%</td>
+                <td />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** テンプレート保存: カテゴリ内の案件をテンプレートとして保存する */
+function TemplateSaveModal({
+  defaultName,
+  projectCount,
+  onSave,
+  onClose,
+}: {
+  defaultName: string;
+  projectCount: number;
+  onSave: (name: string) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(defaultName);
+  const submit = () => {
+    if (!name.trim()) return;
+    onSave(name.trim());
+  };
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <span>テンプレート保存</span>
+          <button className="icon-btn" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+        <div className="modal-body modal-body-column">
+          <div className="list-editor">
+            <label className="field-label">
+              テンプレート名(例: 毎月の定例案件)
+            </label>
+            <input
+              className="modal-text-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submit();
+              }}
+            />
+            <div className="modal-note">
+              {projectCount}件の案件を保存します。日付・進捗率はテンプレートに含めません。
+            </div>
+            <button
+              className="primary"
+              disabled={!name.trim()}
+              onClick={submit}
+            >
+              保存
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** テンプレート選択: 登録済みテンプレートを一覧表示し、追加・削除する */
+function TemplatePickModal({
+  templates,
+  onAdd,
+  onDelete,
+  onClose,
+}: {
+  templates: ProjectTemplate[];
+  onAdd: (t: ProjectTemplate) => void;
+  onDelete: (id: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <span>テンプレートから追加</span>
+          <button className="icon-btn" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+        <div className="modal-body modal-body-column">
+          {templates.length === 0 ? (
+            <div className="modal-note">
+              テンプレートはまだありません。カテゴリ右上の「保存」ボタンから作成できます。
+            </div>
+          ) : (
+            templates.map((t) => (
+              <div key={t.id} className="template-item">
+                <div className="template-info">
+                  <div className="template-name">{t.name}</div>
+                  <div className="template-meta">{t.projects.length}件の案件</div>
+                </div>
+                <div className="template-btns">
+                  <button className="small-btn" onClick={() => onAdd(t)}>
+                    追加
+                  </button>
+                  <button className="icon-btn danger" onClick={() => onDelete(t.id)}>
+                    ✕
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SettingsModal({
   settings,
   onChange,
@@ -510,6 +741,11 @@ export default function App() {
   const [toast, setToast] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [latestVersion, setLatestVersion] = useState<string | null>(null);
+  // 月次ビュー: "YYYY-MM" または ""(日付未定)の絞り込み。null = 全件表示
+  const [monthFilter, setMonthFilter] = useState<string | null>(null);
+  const [showMonthlyStats, setShowMonthlyStats] = useState(false);
+  const [templateSaveSectionId, setTemplateSaveSectionId] = useState<string | null>(null);
+  const [templatePickSectionId, setTemplatePickSectionId] = useState<string | null>(null);
   const loaded = useRef(false);
   const saveTimer = useRef<number | undefined>(undefined);
 
@@ -637,6 +873,65 @@ export default function App() {
     "--w-preview": `${data.settings.previewWidth}px`,
   } as React.CSSProperties;
 
+  // 月次ビュー: 絞り込み中の月(または日付未定)に該当する案件だけを表示する
+  const visibleProjects =
+    monthFilter === null
+      ? data.projects
+      : data.projects.filter((p) => monthKey(p) === monthFilter);
+
+  const saveTemplate = (name: string) => {
+    const sectionId = templateSaveSectionId;
+    if (!sectionId) return;
+    const template: ProjectTemplate = {
+      id: newId(),
+      name,
+      projects: sortProjects(
+        data.projects.filter((p) => p.sectionId === sectionId)
+      ).map((p) => ({
+        title: p.title,
+        marker: p.marker,
+        status: p.status,
+        order: p.order,
+      })),
+    };
+    update((d) => ({ ...d, templates: [...d.templates, template] }));
+    setTemplateSaveSectionId(null);
+    showToast("テンプレートを保存しました");
+  };
+
+  const addFromTemplate = (template: ProjectTemplate) => {
+    const sectionId = templatePickSectionId;
+    if (!sectionId) return;
+    update((d) => ({
+      ...d,
+      projects: [
+        ...d.projects,
+        ...template.projects.map((tp: TemplateProject) => ({
+          id: newId(),
+          sectionId,
+          date: { year: null, month: null, day: null },
+          title: tp.title,
+          marker: tp.marker,
+          status: tp.status,
+          progress: 0,
+          order: tp.order,
+        })),
+      ],
+    }));
+    setTemplatePickSectionId(null);
+    showToast(`テンプレート「${template.name}」を追加しました`);
+  };
+
+  const deleteTemplate = (id: string) => {
+    update((d) => ({ ...d, templates: d.templates.filter((t) => t.id !== id) }));
+    showToast("テンプレートを削除しました");
+  };
+
+  const pickMonth = (key: string) => {
+    setMonthFilter(key);
+    setShowMonthlyStats(false);
+  };
+
   return (
     <div className="app" style={editorVars}>
       <header className="toolbar">
@@ -653,6 +948,7 @@ export default function App() {
             {data.settings.theme === "dark" ? "🌙 ダーク" : "☀ ライト"}
           </button>
           <button onClick={() => setShowSettings(true)}>マスタ設定</button>
+          <button onClick={() => setShowMonthlyStats(true)}>月次集計</button>
           <button
             onClick={() =>
               update((d) => ({
@@ -671,11 +967,21 @@ export default function App() {
       </header>
       <div className="main">
         <div className="editor">
+          {monthFilter !== null && (
+            <div className="filter-banner">
+              <span>
+                月次ビュー: {monthFilter === "" ? "日付未定" : monthLabel(monthFilter)} の案件を表示中
+              </span>
+              <button className="small-btn" onClick={() => setMonthFilter(null)}>
+                全件表示に戻る
+              </button>
+            </div>
+          )}
           {data.sections.map((s, i) => (
             <SectionEditor
               key={s.id}
               section={s}
-              projects={data.projects.filter((p) => p.sectionId === s.id)}
+              projects={visibleProjects.filter((p) => p.sectionId === s.id)}
               settings={data.settings}
               isFirst={i === 0}
               isLast={i === data.sections.length - 1}
@@ -744,6 +1050,8 @@ export default function App() {
                 }))
               }
               onResizeColumn={resizeColumn}
+              onSaveTemplate={() => setTemplateSaveSectionId(s.id)}
+              onAddFromTemplate={() => setTemplatePickSectionId(s.id)}
             />
           ))}
         </div>
@@ -758,6 +1066,33 @@ export default function App() {
           settings={data.settings}
           onChange={(settings) => update((d) => ({ ...d, settings }))}
           onClose={() => setShowSettings(false)}
+        />
+      )}
+      {showMonthlyStats && (
+        <MonthlyStatsModal
+          projects={data.projects}
+          onPickMonth={pickMonth}
+          onClose={() => setShowMonthlyStats(false)}
+        />
+      )}
+      {templateSaveSectionId && (
+        <TemplateSaveModal
+          defaultName={
+            data.sections.find((s) => s.id === templateSaveSectionId)?.name ?? ""
+          }
+          projectCount={
+            data.projects.filter((p) => p.sectionId === templateSaveSectionId).length
+          }
+          onSave={saveTemplate}
+          onClose={() => setTemplateSaveSectionId(null)}
+        />
+      )}
+      {templatePickSectionId && (
+        <TemplatePickModal
+          templates={data.templates}
+          onAdd={addFromTemplate}
+          onDelete={deleteTemplate}
+          onClose={() => setTemplatePickSectionId(null)}
         />
       )}
       {toast && <div className="toast">{toast}</div>}

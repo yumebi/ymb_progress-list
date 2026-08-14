@@ -27,6 +27,21 @@ export interface Section {
   name: string;
 }
 
+/** テンプレートに保存する案件の内容(日付・進捗率はリセットされるため含めない) */
+export interface TemplateProject {
+  title: string;
+  marker: string;
+  status: string;
+  order: string;
+}
+
+/** 再利用可能な案件セット(例: 毎月の定例案件)。一覧へ一括で追加できる */
+export interface ProjectTemplate {
+  id: string;
+  name: string;
+  projects: TemplateProject[];
+}
+
 export type Theme = "dark" | "light";
 
 /** 各列の幅(px)。ユーザーがドラッグで調整可能 */
@@ -71,6 +86,7 @@ export interface Settings {
 export interface AppData {
   sections: Section[];
   projects: Project[];
+  templates: ProjectTemplate[];
   settings: Settings;
 }
 

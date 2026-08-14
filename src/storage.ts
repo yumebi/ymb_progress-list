@@ -111,6 +111,7 @@ function migrate(raw: any): AppData {
   return {
     sections: raw.sections ?? [],
     projects,
+    templates: Array.isArray(raw.templates) ? raw.templates : [],
     settings: { ...structuredClone(DEFAULT_SETTINGS), ...(raw.settings ?? {}) },
   };
 }
