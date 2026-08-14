@@ -534,6 +534,7 @@ export default function App() {
     if (!loaded.current || !data) return;
     window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => saveData(data), 500);
+    return () => window.clearTimeout(saveTimer.current);
   }, [data]);
 
   // テーマをルート要素に反映
