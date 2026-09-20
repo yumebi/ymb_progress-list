@@ -58,7 +58,11 @@ function isNewerVersion(a: string, b: string): boolean {
 /** GitHub Releasesの最新バージョンを取得(取得失敗時はnull) */
 async function fetchLatestVersion(): Promise<string | null> {
   try {
-    const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
+    // DNS・接続・レスポンスが無応答のまま固まるのを防ぐため10秒で打ち切る。
+    const res = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
+      { signal: AbortSignal.timeout(10000) }
+    );
     if (!res.ok) return null;
     const json = await res.json();
     const tag = String(json.tag_name ?? "");
