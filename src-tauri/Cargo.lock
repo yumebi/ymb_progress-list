@@ -2810,7 +2810,7 @@ dependencies = [
 
 [[package]]
 name = "progress-list"
-version = "1.1.8"
+version = "1.1.9"
 dependencies = [
  "serde",
  "serde_json",
