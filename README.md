@@ -42,11 +42,11 @@ npm run tauri dev    # 開発起動
 
 | 用途 | ライブラリ/ツール |
 |---|---|
-| フレームワーク | [Tauri v2](https://v2.tauri.app/) |
-| フロントエンド | React 19 + TypeScript |
-| ビルドツール | Vite |
+| フレームワーク | [Tauri v2](https://v2.tauri.app/)(2.12 系) |
+| フロントエンド | React 19 + TypeScript 7 |
+| ビルドツール | Vite 8 |
 | 永続化 | tauri-plugin-store(ブラウザ実行時はlocalStorage) |
-| その他プラグイン | tauri-plugin-clipboard-manager / tauri-plugin-dialog / tauri-plugin-fs / tauri-plugin-opener |
+| その他プラグイン | tauri-plugin-clipboard-manager / tauri-plugin-dialog / tauri-plugin-fs / tauri-plugin-opener / tauri-plugin-single-instance / tauri-plugin-window-state |
 | CI/CD | GitHub Actions(mainへのpushで自動ビルド・バージョン採番・Release公開) |
 
 ## プロジェクト構成
@@ -55,6 +55,14 @@ npm run tauri dev    # 開発起動
 - `src/storage.ts` — tauri-plugin-store による永続化+旧データ変換(ブラウザ実行時はlocalStorage)
 - `src/seed.ts` — 初回起動時の初期データ
 - `src/App.tsx` — UI全体(カテゴリ/案件編集・マスタ設定・プレビュー・テーマ切替)
+
+## セキュリティと依存関係の更新
+
+- **脆弱性の検査**: 依存ライブラリの既知の脆弱性を、[OSV-Scanner](https://google.github.io/osv-scanner/) で、push・プルリクエスト・毎週月曜(10:00 JST)に自動で検査します(`.github/workflows/osv-scanner.yml`)。見つかるとこのワークフローが失敗します(リリースのワークフローとは独立で、リリースは止めません)。
+- **更新の提案**: [Dependabot](https://docs.github.com/ja/code-security/dependabot) が、毎週月曜に依存の更新をプルリクエストで提案します(`.github/dependabot.yml`)。公開から 14 日未満のバージョンは対象にしません(供給網攻撃への備え)。
+- **npm の追加の備え**: `.npmrc` の `min-release-age=14` で、npm も公開から 14 日未満のバージョンを解決しません。
+- **緊急の修正**: 実際に影響のある脆弱性の修正など、緊急性が高いものは、14 日未満でもすぐに取り込みます。
+- **失敗が残る場合**: 修正版がない、または上流(Tauri(glib、zbus 系など))の更新待ちの検出は、検査が失敗のまま残ることがあります。
 
 ## ダウンロード
 
